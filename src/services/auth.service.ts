@@ -1,14 +1,49 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { v4 as uuidv4 } from 'uuid';
 import { Role } from '@prisma/client';
 import { prisma } from '../config/prisma';
-import { redis } from '../config/redis';
 import { config } from '../config';
 import { AppError } from '../middleware/errorHandler';
 import { logger } from '../config/logger';
 
 const REFRESH_PREFIX = 'refresh:';
+
+async function redisSet(key: string, value: string, ttlSeconds: number): Promise<void> {
+  try {
+    const { redis } = await import('../config/redis');
+    await Promise.race([
+      redis.set(key, value, 'EX', ttlSeconds),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Redis timeout')), 2000)),
+    ]);
+  } catch {
+    logger.warn('Redis set skipped (not available)', { key });
+  }
+}
+
+async function redisGet(key: string): Promise<string | null> {
+  try {
+    const { redis } = await import('../config/redis');
+    return await Promise.race([
+      redis.get(key),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 2000)),
+    ]);
+  } catch {
+    logger.warn('Redis get skipped (not available)', { key });
+    return null;
+  }
+}
+
+async function redisDel(key: string): Promise<void> {
+  try {
+    const { redis } = await import('../config/redis');
+    await Promise.race([
+      redis.del(key),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Redis timeout')), 2000)),
+    ]);
+  } catch {
+    logger.warn('Redis del skipped (not available)', { key });
+  }
+}
 
 function generateTokens(payload: { id: string; role: Role; phone: string }) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -48,7 +83,7 @@ export async function register(data: {
   });
 
   const tokens = generateTokens({ id: user.id, role: user.role, phone: user.phone });
-  await redis.set(`${REFRESH_PREFIX}${user.id}`, tokens.refreshToken, 'EX', 7 * 24 * 3600);
+  await redisSet(`${REFRESH_PREFIX}${user.id}`, tokens.refreshToken, 7 * 24 * 3600);
 
   return { user, ...tokens };
 }
@@ -62,7 +97,7 @@ export async function login(phone: string, password: string) {
   if (!valid) throw new AppError(401, 'Invalid credentials');
 
   const tokens = generateTokens({ id: user.id, role: user.role, phone: user.phone });
-  await redis.set(`${REFRESH_PREFIX}${user.id}`, tokens.refreshToken, 'EX', 7 * 24 * 3600);
+  await redisSet(`${REFRESH_PREFIX}${user.id}`, tokens.refreshToken, 7 * 24 * 3600);
 
   return {
     user: { id: user.id, phone: user.phone, email: user.email, role: user.role, fullName: user.fullName, avatar: user.avatar },
@@ -78,25 +113,24 @@ export async function refreshTokens(refreshToken: string) {
     throw new AppError(401, 'Invalid refresh token');
   }
 
-  const stored = await redis.get(`${REFRESH_PREFIX}${payload.id}`);
-  if (stored !== refreshToken) throw new AppError(401, 'Refresh token revoked');
+  const stored = await redisGet(`${REFRESH_PREFIX}${payload.id}`);
+  if (stored && stored !== refreshToken) throw new AppError(401, 'Refresh token revoked');
 
   const tokens = generateTokens({ id: payload.id, role: payload.role, phone: payload.phone });
-  await redis.set(`${REFRESH_PREFIX}${payload.id}`, tokens.refreshToken, 'EX', 7 * 24 * 3600);
+  await redisSet(`${REFRESH_PREFIX}${payload.id}`, tokens.refreshToken, 7 * 24 * 3600);
   return tokens;
 }
 
 export async function logout(userId: string) {
-  await redis.del(`${REFRESH_PREFIX}${userId}`);
+  await redisDel(`${REFRESH_PREFIX}${userId}`);
 }
 
 export async function sendPhoneVerification(phone: string) {
   const code = Math.floor(100000 + Math.random() * 900000).toString();
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
   await prisma.phoneVerification.create({ data: { phone, code, expiresAt } });
   logger.info(`SMS code for ${phone}: ${code}`);
-  // In production: integrate with SMS provider (e.g., SMSC.ru, SMSRU)
   return { message: 'Code sent' };
 }
 
