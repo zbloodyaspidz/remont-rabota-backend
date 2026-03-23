@@ -24,7 +24,8 @@ import adminRoutes from './routes/admin.routes';
 
 async function bootstrap() {
   // Redis — optional
-  let redisClient: import('./config/redis').default | null = null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let redisClient: any = null;
   try {
     const { redis } = await import('./config/redis');
     await redis.connect();

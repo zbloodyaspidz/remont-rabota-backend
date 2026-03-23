@@ -9,5 +9,8 @@ export async function addNotificationJob(data: {
   logger.info('Notification job queued (in-memory)', { userId: data.userId, title: data.title });
 }
 
-export const notificationQueue = { add: addNotificationJob };
+export const notificationQueue = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  add: (_name: string, data: any) => addNotificationJob(data),
+};
 export default notificationQueue;

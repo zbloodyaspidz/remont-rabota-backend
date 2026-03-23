@@ -11,12 +11,10 @@ import { logger } from '../config/logger';
 const REFRESH_PREFIX = 'refresh:';
 
 function generateTokens(payload: { id: string; role: Role; phone: string }) {
-  const accessToken = jwt.sign(payload, config.jwt.secret, {
-    expiresIn: config.jwt.accessExpiresIn,
-  });
-  const refreshToken = jwt.sign(payload, config.jwt.refreshSecret, {
-    expiresIn: config.jwt.refreshExpiresIn,
-  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const accessToken = jwt.sign(payload, config.jwt.secret, { expiresIn: config.jwt.accessExpiresIn as any });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const refreshToken = jwt.sign(payload, config.jwt.refreshSecret, { expiresIn: config.jwt.refreshExpiresIn as any });
   return { accessToken, refreshToken };
 }
 

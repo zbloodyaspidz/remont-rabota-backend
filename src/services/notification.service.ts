@@ -29,7 +29,8 @@ export async function createNotification(data: {
   body: string;
   data?: Record<string, unknown>;
 }) {
-  return prisma.notification.create({ data });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return prisma.notification.create({ data: data as any });
 }
 
 export async function sendPushNotification(data: {
