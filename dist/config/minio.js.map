@@ -1,0 +1,1 @@
+{"version":3,"file":"minio.js","sourceRoot":"","sources":["../../src/config/minio.ts"],"names":[],"mappings":";;AAEA,oCAEC;AAED,gCAMC;AAZD,qCAAkC;AAE3B,KAAK,UAAU,YAAY;IAChC,eAAM,CAAC,IAAI,CAAC,6CAA6C,CAAC,CAAC;AAC7D,CAAC;AAEM,KAAK,UAAU,UAAU,CAC9B,OAAe,EACf,SAAiB,EACjB,SAAiB;IAEjB,MAAM,IAAI,KAAK,CAAC,6BAA6B,CAAC,CAAC;AACjD,CAAC"}
