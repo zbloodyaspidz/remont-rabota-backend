@@ -39,23 +39,5 @@ export async function sendPushNotification(data: {
   data?: Record<string, unknown>;
 }) {
   await createNotification(data);
-
-  const user = await prisma.user.findUnique({
-    where: { id: data.userId },
-    select: { fcmToken: true },
-  });
-
-  if (!user?.fcmToken) return;
-
-  try {
-    // FCM push via firebase-admin
-    const { getMessaging } = await import('firebase-admin/messaging');
-    await getMessaging().send({
-      token: user.fcmToken,
-      notification: { title: data.title, body: data.body },
-      data: data.data ? Object.fromEntries(Object.entries(data.data).map(([k, v]) => [k, String(v)])) : undefined,
-    });
-  } catch (err) {
-    logger.error('FCM push failed', { err, userId: data.userId });
-  }
+  logger.info('Push notification stored (FCM not configured)', { userId: data.userId });
 }
