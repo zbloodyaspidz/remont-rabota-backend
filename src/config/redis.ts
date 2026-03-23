@@ -3,8 +3,9 @@ import { config } from './index';
 import { logger } from './logger';
 
 export const redis = new Redis(config.redis.url, {
-  retryStrategy: (times) => Math.min(times * 50, 2000),
-  maxRetriesPerRequest: 3,
+  retryStrategy: () => null,
+  maxRetriesPerRequest: 1,
+  connectTimeout: 3000,
   lazyConnect: true,
 });
 

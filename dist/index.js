@@ -63,7 +63,10 @@ async function bootstrap() {
     let redisClient = null;
     try {
         const { redis } = await Promise.resolve().then(() => __importStar(require('./config/redis')));
-        await redis.connect();
+        await Promise.race([
+            redis.connect(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Redis connect timeout')), 4000)),
+        ]);
         redisClient = redis;
         logger_1.logger.info('Redis connected');
     }

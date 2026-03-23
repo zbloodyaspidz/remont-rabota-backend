@@ -5,8 +5,9 @@ const ioredis_1 = require("ioredis");
 const index_1 = require("./index");
 const logger_1 = require("./logger");
 exports.redis = new ioredis_1.Redis(index_1.config.redis.url, {
-    retryStrategy: (times) => Math.min(times * 50, 2000),
-    maxRetriesPerRequest: 3,
+    retryStrategy: () => null,
+    maxRetriesPerRequest: 1,
+    connectTimeout: 3000,
     lazyConnect: true,
 });
 exports.redis.on('connect', () => logger_1.logger.info('Redis connected'));
